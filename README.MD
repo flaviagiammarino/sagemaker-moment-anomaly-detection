@@ -33,7 +33,7 @@ The model is deployed in three steps.
    aws s3 cp model.tar.gz s3://<bucket>/moment-1-large/model.tar.gz
    ```
 
-3. **Create a SageMaker model from the image and the archive**
+3. **Create a SageMaker model from the image in ECR and the model weights in S3**
 
    When the model runs, SageMaker pulls the image from ECR and extracts the archive into `/opt/ml/model` in the container, 
    from which the inference script loads the weights.
@@ -56,10 +56,9 @@ Each input file contains a JSON object, with content type `application/json`, an
    "stride": 128
 }
 ```
-
-- The `csv` field contains the time series as CSV text in long format, with one row per time step and the columns `id`, the identifier of the time series, `timestamp`, the time stamp, and `value`, the observed value.
-
-- The optional `stride` field sets the number of time steps between the starts of consecutive windows, and defaults to 128.
+The `csv` field contains the time series as CSV text in long format, with one row per time step and the columns `id`, 
+the identifier of the time series, `timestamp`, the time stamp, and `value`, the observed value.
+The optional `stride` field sets the number of time steps between the starts of consecutive windows, and defaults to 128.
 
 ### Output
 Each output file contains CSV text, with content type `text/csv`.
