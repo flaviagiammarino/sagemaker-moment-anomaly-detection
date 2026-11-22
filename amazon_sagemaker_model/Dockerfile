@@ -1,4 +1,4 @@
-# Extend the AWS Deep Learning Container for PyTorch 2.5.1 inference (Python 3.11).
+# Extend the AWS Deep Learning Container for PyTorch 2.5.1 GPU inference (Python 3.11, CUDA 12.4).
 
 # Build from the repository root (see build_and_push.sh), so that the license files are included.
 ARG BASE_IMAGE=public.ecr.aws/deep-learning-containers/pytorch-inference:2.5.1-gpu-py311-cu124-ubuntu22.04-sagemaker
