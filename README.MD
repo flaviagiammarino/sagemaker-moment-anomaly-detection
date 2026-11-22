@@ -49,7 +49,7 @@ in a file with the same name and the `.out` extension.
 ### Input
 
 Each input file contains a JSON object, with content type `application/json`.
-Its `csv` field contains the time series as CSV text in long format, with one row per time step and the columns `id`, 
+Its `csv` field contains the time series as CSV text in long format, with one row per time step, and the columns `id`, 
 the identifier of the time series, `timestamp`, the time stamp, and `value`, the observed value.
 The optional `stride` field sets the number of time steps between the starts of consecutive windows, and defaults to 128.
 
