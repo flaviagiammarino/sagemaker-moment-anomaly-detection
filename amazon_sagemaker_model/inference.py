@@ -2,7 +2,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import io
-import json
 import pandas as pd
 import torch
 from modules import MOMENT, SEQ_LEN
@@ -10,64 +9,79 @@ from modules import MOMENT, SEQ_LEN
 # Extract the environment configuration
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 use_data_parallel = torch.cuda.device_count() > 1
-kwargs = {"num_workers": 1, "pin_memory": True} if torch.cuda.is_available() else {}
 
 @torch.inference_mode()
 def reconstruct(
         model: MOMENT | torch.nn.DataParallel,
-        series: torch.Tensor,
+        series: dict[str, torch.Tensor],
         stride: int = SEQ_LEN // 4,
         batch_size: int = 256,
-) -> torch.Tensor:
+) -> list[torch.Tensor]:
     """
-    Reconstruct a time series sequence by sequence. Where sequences overlap
-    (stride < SEQ_LEN), each time step is the average of its reconstructions.
+    Reconstruct several univariate time series in shared batches. Where windows
+    overlap (stride < SEQ_LEN), each time step is the average of its reconstructions.
 
     Input:
-        series : [n_channels x n_samples]
+        series : dict of [n_samples_i] tensors, one per time series, keyed by id
     Output:
-        reconstruction : [n_channels x n_samples]
+        reconstructions : list of [n_samples_i] tensors, in the same order
     """
 
+    # A stride above SEQ_LEN would leave time steps that no window covers
+    if not 1 <= stride <= SEQ_LEN:
+        raise ValueError(f"stride must be in [1, {SEQ_LEN}], got {stride}.")
+
     # The model's weights are float32: integer or float64 series would fail
-    series = series.float()  # [n_channels x n_samples]
+    ids, series = list(series), [s.float() for s in series.values()]
 
-    # Missing or infinite values are not supported
-    if not torch.isfinite(series).all():
-        raise ValueError("Missing (NaN) or infinite values are not supported.")
+    for id, s in zip(ids, series):
+        # Missing or infinite values are not supported
+        if not torch.isfinite(s).all():
+            raise ValueError(f"Series {id}: missing (NaN) or infinite values are not supported.")
+        # Each series must fill at least one full window
+        if len(s) < SEQ_LEN:
+            raise ValueError(f"Series {id}: need at least {SEQ_LEN} time steps, got {len(s)}.")
 
-    # The series must fill at least one full window
-    n_channels, n_samples = series.shape  # series: [n_channels x n_samples]
-    if n_samples < SEQ_LEN:
-        raise ValueError(f"Series must have at least {SEQ_LEN} time steps, got {n_samples}.")
+    # Window starts of each series: one every `stride` steps, and the last window ends
+    # at the end of the series, so no window needs padding
+    starts = [
+        list(range(0, len(s) - SEQ_LEN, stride)) + [len(s) - SEQ_LEN]
+        for s in series
+    ]
 
-    # Start of each window: one every `stride` steps, and the last window ends at the end
-    # of the series, so no window needs padding
-    starts = list(range(0, n_samples - SEQ_LEN, stride)) + [n_samples - SEQ_LEN]
+    # Cut every series into windows of SEQ_LEN steps and stack them all together
+    windows = torch.cat([
+        s.unfold(0, SEQ_LEN, 1)[st]  
+        for s, st in zip(series, starts)
+    ]).unsqueeze(1)  # [n_windows x 1 x SEQ_LEN]
 
-    # Cut the series into windows of SEQ_LEN steps
-    x = torch.stack([series[:, s: s + SEQ_LEN] for s in starts])  # [n_windows x n_channels x SEQ_LEN]
-
-    # Feed the windows to the model in batches
+    # Feed the windows to the model in batches, in order. A batch can mix windows of
+    # different series: each window is processed on its own
     dataloader = torch.utils.data.DataLoader(
-        dataset=x,
+        dataset=windows,
         batch_size=batch_size,
         shuffle=False,
-        **kwargs
     )
 
     # Reconstruct each batch on the device and collect the reconstructions on the CPU
-    x_ = torch.cat([model(x.to(device)).cpu() for x in dataloader])  # [n_windows x n_channels x SEQ_LEN]
+    outputs = torch.cat([
+        model(batch.to(device)).cpu() for batch in dataloader
+    ]).squeeze(1)  # [n_windows x SEQ_LEN]
+
+    # Give each series its own windows back: one [n_windows_i x SEQ_LEN] block per series
+    outputs = outputs.split([len(st) for st in starts])
 
     # Average the reconstructions of each time step over the windows that contain it
-    total = torch.zeros(n_channels, n_samples)  # sum of the reconstructions of each time step
-    count = torch.zeros(n_channels, n_samples)  # number of windows that contain each time step
-    for s, x_k in zip(starts, x_):  # x_k: [n_channels x SEQ_LEN]
-        total[:, s: s + SEQ_LEN] += x_k
-        count[:, s: s + SEQ_LEN] += 1
-    x_ = total / count  # [n_channels x n_samples]
+    reconstructions = []
+    for s, st, out in zip(series, starts, outputs):
+        total = torch.zeros(len(s))  # sum of the reconstructions of each time step
+        count = torch.zeros(len(s))  # number of windows that contain each time step
+        for start, window in zip(st, out):  # window: [SEQ_LEN]
+            total[start: start + SEQ_LEN] += window
+            count[start: start + SEQ_LEN] += 1
+        reconstructions.append(total / count)  # [n_samples_i]
 
-    return x_
+    return reconstructions
 
 def model_fn(model_dir):
     '''
@@ -80,28 +94,35 @@ def model_fn(model_dir):
 
 def input_fn(input_data, content_type):
     '''
-    Load the data: a JSON object with
-        csv    : long-format CSV text with columns id, timestamp, value
-        stride : optional, steps between window starts (default SEQ_LEN // 4)
+    Load the data: long-format CSV text with columns id, timestamp, value.
     '''
-    body = json.loads(input_data)
-    data = pd.read_csv(io.StringIO(body["csv"]), parse_dates=["timestamp"])
-    stride = int(body.get("stride", SEQ_LEN // 4))
-    return data, stride
+    if isinstance(input_data, (bytes, bytearray)):
+        input_data = input_data.decode("utf-8")
+    # Read the ids as text, so that an id like "007" is not turned into the number 7
+    return pd.read_csv(io.StringIO(input_data), dtype={"id": str}, parse_dates=["timestamp"])
 
 def predict_fn(data, model):
     '''
     Reconstruct each time series and compute the reconstruction error.
     '''
-    data, stride = data
+    if data.empty:
+        raise ValueError("The data contains no rows.")
 
-    # Put the rows of each time series in time order
+    # Rows without an id would be left out of every series
+    if data["id"].isna().any():
+        raise ValueError("Missing ids are not supported.")
+
+    # Put the rows of each time series in time order: each id is then a contiguous block
     data = data.sort_values(["id", "timestamp"]).reset_index(drop=True)
 
-    # Reconstruct each time series on its own, as a univariate series
-    data["reconstruction"] = data.groupby("id")["value"].transform(
-        lambda value: reconstruct(model, torch.tensor(value.to_numpy()).unsqueeze(0), stride)[0].numpy()
-    )
+    # One univariate tensor per time series, keyed by id, in row order
+    series = {
+        id: torch.tensor(value.to_numpy())
+        for id, value in data.groupby("id", sort=False)["value"]
+    }
+
+    # Reconstruct all the series together. Joining them in group order matches the row order
+    data["reconstruction"] = torch.cat(reconstruct(model, series)).numpy()
 
     # Reconstruction error
     data["error"] = (data["value"] - data["reconstruction"]).abs()
