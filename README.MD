@@ -61,22 +61,22 @@ the identifier of the time series, `timestamp`, the time stamp, and `value`, the
 The optional `stride` field sets the number of time steps between the starts of consecutive windows, and defaults to 128.
 
 ### Output
-Each output file contains CSV text, with content type `text/csv`, with the following structure:
-
-|  id | timestamp           | value | reconstruction | error |
-|----:|:--------------------|------:|---------------:|------:|
-|   1 | 2026-01-01 00:00:00 |    26 |          21.56 |  4.44 |
-|   1 | 2026-01-01 00:30:00 |    28 |          22.41 |  5.59 |
-| ... | ...                 |   ... |            ... |   ... |
-|   2 | 2026-01-01 00:00:00 |    45 |          40.67 |  4.33 |
-|   2 | 2026-01-01 00:30:00 |    45 |          41.46 |  3.54 |
-| ... | ...                 |   ... |            ... |   ... |
-|   3 | 2026-01-01 00:00:00 |    69 |          61.50 |  7.50 |
-|   3 | 2026-01-01 00:30:00 |    61 |          62.42 |  1.42 |
-| ... | ...                 |   ... |            ... |   ... |
-
+Each output file contains CSV text, with content type `text/csv`.
 It contains the input columns, sorted by `id` and `timestamp`, and two additional columns: `reconstruction`, 
 the reconstructed value, and `error`, the absolute reconstruction error `|value - reconstruction|`.
+
+```csv
+id,timestamp,value,reconstruction,error
+1,2026-01-01 00:00:00,26,21.56,4.44
+1,2026-01-01 00:30:00,28,22.41,5.59
+...
+2,2026-01-01 00:00:00,45,40.67,4.33
+2,2026-01-01 00:30:00,45,41.46,3.54
+...
+3,2026-01-01 00:00:00,69,61.50,7.50
+3,2026-01-01 00:30:00,61,62.42,1.42
+...
+```
 
 ## Real-time inference
 
