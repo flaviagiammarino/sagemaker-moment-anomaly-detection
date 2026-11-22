@@ -45,16 +45,23 @@ The model is deployed in three steps.
 
 A batch transform job reads each input file from S3, sends its content to the model as one request, and writes the response to S3, 
 in a file with the same name and the `.out` extension.
+
+### Input
+
 Each input file contains a JSON object, with content type `application/json`, and with the following structure:
 
 ```json
-{"csv": "id,timestamp,value\n1,2026-01-01 00:00:00,26\n1,2026-01-01 00:30:00,28\n...", "stride": 128}
+{
+   "csv": "id,timestamp,value\n1,2026-01-01 00:00:00,26\n1,2026-01-01 00:30:00,28\n...", 
+   "stride": 128
+}
 ```
 
-The `csv` field contains the time series as CSV text in long format, with one row per time step and the columns `id`, 
-the identifier of the time series, `timestamp`, the time stamp, and `value`, the observed value.
-The optional `stride` field sets the number of time steps between the starts of consecutive windows, and defaults to 128.
+- The `csv` field contains the time series as CSV text in long format, with one row per time step and the columns `id`, the identifier of the time series, `timestamp`, the time stamp, and `value`, the observed value.
 
+- The optional `stride` field sets the number of time steps between the starts of consecutive windows, and defaults to 128.
+
+### Output
 Each output file contains CSV text, with content type `text/csv`.
 It contains the input columns, sorted by `id` and `timestamp`, and two additional columns: `reconstruction`, 
 the reconstructed value, and `error`, the absolute reconstruction error `|value - reconstruction|`.
