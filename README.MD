@@ -70,4 +70,4 @@ With a smaller stride, each time step is reconstructed several times, at differe
 The cost is more computation, since a smaller stride means more windows: with a stride of 1, there is one window per time step.
 
 The time series must be complete, without missing or infinite values, and must have at least 512 time steps, so that it fills at least one window.
-MOMENT can impute missing values, by replacing the masked patches with the mask embedding learned in pretraining, but this repository only implements reconstruction, and doesn't implement imputation.
+MOMENT can impute missing values, but this is not implemented in this repository, as the anomaly score is the difference between the observed and the reconstructed values, and a missing value, which has no observed value, has no anomaly score.
