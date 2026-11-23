@@ -28,7 +28,7 @@ The model is deployed in three steps.
 
    ```bash
    tar -czf model.tar.gz config.json model.safetensors
-   aws s3 cp model.tar.gz s3://<bucket>/moment-1-large/model.tar.gz
+   aws s3 cp model.tar.gz s3://<s3-bucket-name>/moment-1-large/model.tar.gz
    ```
 
 3. **Create a SageMaker model from the inference image in ECR and the model weights in S3**
@@ -85,8 +85,7 @@ C,2026-01-01 00:30:00,61,62.42,1.42
 ## Real-time inference
 
 An endpoint keeps the model loaded on one or more instances and returns the response to each request directly.
-The request body is the same CSV text used as input for batch inference, and the response is the same CSV text 
-returned as output, both with content type `text/csv`.
+The request and response are the same CSV text used for batch inference.
 
 ## Asynchronous inference
 
