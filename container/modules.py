@@ -158,8 +158,7 @@ class MOMENT(nn.Module):
         # Each channel is encoded as its own sequence: merge the batch and channel dimensions
         h = h.reshape(batch_size * n_channels, N_PATCHES, self.d_model)  # [(batch_size * n_channels) x N_PATCHES x d_model]
 
-        # T5 encoder: a stack of self-attention and feed-forward blocks (24 for MOMENT-1-large).
-        # Every patch attends to every patch
+        # T5 encoder: a stack of self-attention and feed-forward blocks (24 for MOMENT-1-large)
         h = self.encoder(inputs_embeds=h).last_hidden_state  # [(batch_size * n_channels) x N_PATCHES x d_model]
 
         # Split the batch and channel dimensions again

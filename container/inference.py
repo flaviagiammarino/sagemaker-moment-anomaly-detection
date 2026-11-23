@@ -98,7 +98,6 @@ def input_fn(input_data, content_type):
     '''
     if isinstance(input_data, (bytes, bytearray)):
         input_data = input_data.decode("utf-8")
-    # Read the ids as text, so that an id like "007" is not turned into the number 7
     return pd.read_csv(io.StringIO(input_data), dtype={"id": str}, parse_dates=["timestamp"])
 
 def predict_fn(data, model):
@@ -121,10 +120,10 @@ def predict_fn(data, model):
         for id, value in data.groupby("id", sort=False)["value"]
     }
 
-    # Reconstruct all the series together. Joining them in group order matches the row order
+    # Reconstruct all the series together
     data["reconstruction"] = torch.cat(reconstruct(model, series)).numpy()
 
-    # Reconstruction error
+    # Compute the reconstruction error
     data["error"] = (data["value"] - data["reconstruction"]).abs()
 
     return data
