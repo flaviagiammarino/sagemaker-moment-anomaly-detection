@@ -102,7 +102,7 @@ def input_fn(input_data, content_type):
 
 def predict_fn(data, model):
     '''
-    Reconstruct each time series and compute the reconstruction error.
+    Reconstruct each time series.
     '''
     if data.empty:
         raise ValueError("The data contains no rows.")
@@ -123,14 +123,11 @@ def predict_fn(data, model):
     # Reconstruct all the series together
     data["reconstruction"] = torch.cat(reconstruct(model, series)).numpy()
 
-    # Compute the reconstruction error
-    data["error"] = (data["value"] - data["reconstruction"]).abs()
-
     return data
 
 def output_fn(prediction, accept):
     '''
-    Return the predictions: CSV text with columns id, timestamp, value, reconstruction, error.
+    Return the predictions: CSV text with columns id, timestamp, value, reconstruction.
     '''
     csv_buffer = io.StringIO()
     prediction.to_csv(csv_buffer, index=False)
