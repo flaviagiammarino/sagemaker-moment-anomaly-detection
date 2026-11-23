@@ -39,16 +39,13 @@ The model is deployed in three steps.
    The same model can then be used for batch inference, with a batch transform job, for real-time inference, with an endpoint, 
    and for asynchronous inference, with an asynchronous endpoint, as shown in the [notebook](notebook.ipynb).
 
-## Batch inference
-
-A batch transform job reads each input file from S3, sends its content to the model as one request, and writes the response to S3, 
-in a file with the same name and the `.out` extension.
+## Inference
 
 ### Input
 
-Each input file contains CSV text, with content type `text/csv`.
-It contains the time series in long format, with one row per time step, and the columns `id`, 
-the identifier of the time series, `timestamp`, the time stamp, and `value`, the observed value.
+The input is a CSV text (`text/csv`) containing the time series in long format, 
+with one row per time step, and with the following columns: `id`, the identifier of the time series, 
+`timestamp`, the time stamp, and `value`, the observed value.
 
 ```csv
 id,timestamp,value
@@ -65,34 +62,21 @@ C,2026-01-01 00:30:00,61
 
 ### Output
 
-Each output file contains CSV text, with content type `text/csv`.
-It contains the `id`, `timestamp` and `value` columns from the input, and two additional columns: `reconstruction`, 
-the reconstructed value, and `error`, the absolute reconstruction error `|value - reconstruction|`.
+The output is a CSV text (`text/csv`) containing the `id`, `timestamp` and `value` columns from the input, 
+and an additional `reconstruction` column with the reconstructed value.
 
 ```csv
-id,timestamp,value,reconstruction,error
-A,2026-01-01 00:00:00,26,21.56,4.44
-A,2026-01-01 00:30:00,28,22.41,5.59
+id,timestamp,value,reconstruction 
+A,2026-01-01 00:00:00,26,21.56 
+A,2026-01-01 00:30:00,28,22.41 
 ...
-B,2026-01-01 00:00:00,45,40.67,4.33
-B,2026-01-01 00:30:00,45,41.46,3.54
+B,2026-01-01 00:00:00,45,40.67 
+B,2026-01-01 00:30:00,45,41.46 
 ...
-C,2026-01-01 00:00:00,69,61.50,7.50
-C,2026-01-01 00:30:00,61,62.42,1.42
+C,2026-01-01 00:00:00,69,61.50 
+C,2026-01-01 00:30:00,61,62.42 
 ...
 ```
-
-## Real-time inference
-
-An endpoint keeps the model loaded on one or more instances and returns the response to each request directly.
-The request and response are the same CSV text used for batch inference.
-
-## Asynchronous inference
-
-An asynchronous endpoint keeps the model loaded like a real-time endpoint, but queues the requests and processes them in the background.
-Each request body is uploaded to S3 as a file, and the endpoint is invoked with its S3 location: the invocation returns immediately 
-with the S3 location where the endpoint will write the response, and the S3 location where it will write the error if the request fails.
-The request and the response are the same CSV text used for batch and real-time inference.
 
 ## Notes
 
