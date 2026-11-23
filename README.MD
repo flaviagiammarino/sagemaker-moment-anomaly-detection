@@ -37,7 +37,7 @@ The model is deployed in three steps.
    from which the inference script loads the weights.
    As the container doesn't need any network access, the model can be created with network isolation enabled.
    The same model can then be used for batch inference, with a batch transform job, for real-time inference, with an endpoint, 
-   and for asynchronous inference, with an asynchronous endpoint, as shown in the [notebook](notebook.ipynb).
+   and for asynchronous inference, with an asynchronous endpoint, as shown in the [notebook](sample_notebook.ipynb).
 
 ## Inference
 
