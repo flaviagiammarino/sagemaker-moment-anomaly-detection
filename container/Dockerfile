@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir transformers==4.54.1 safetensors
 
 # The inference code. The inference toolkit imports the module named by SAGEMAKER_PROGRAM
 # from the Python path, and uses its model_fn, input_fn, predict_fn and output_fn
-COPY amazon_sagemaker_model/inference.py amazon_sagemaker_model/modules.py /opt/ml/code/
+COPY container/inference.py container/modules.py /opt/ml/code/
 ENV PYTHONPATH=/opt/ml/code
 ENV SAGEMAKER_PROGRAM=inference.py
 
