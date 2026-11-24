@@ -5,6 +5,8 @@ It implements inference from CSV data and supports both GPU and multi-GPU instan
 The Docker image is built by extending the AWS Deep Learning Container for PyTorch 2.5.1 GPU inference (Python 3.11, CUDA 12.4) and 
 includes software licensed under the [MIT License](https://github.com/moment-timeseries-foundation-model/moment/blob/main/LICENSE).
 
+Full details in the [blog post](https://flaviagiammarino.com/blog/sagemaker-moment-anomaly-detection.html).
+
 <img src=https://machine-learning-blog.s3.eu-west-2.amazonaws.com/sagemaker-moment-anomaly-detection/architecture_diagram.png style="width:100%;margin-top:60px;margin-bottom:50px"/>
 
 ## Deployment
