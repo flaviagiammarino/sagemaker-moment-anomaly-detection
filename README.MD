@@ -38,8 +38,7 @@ The model is deployed in three steps.
    When the model runs, SageMaker pulls the image from ECR and extracts the archive into `/opt/ml/model` in the container, 
    from which the inference script loads the weights.
    As the container doesn't need any network access, the model can be created with network isolation enabled.
-   The same model can then be used for batch inference, real-time inference and asynchronous inference, 
-   as shown in the [notebook](sample_notebook.ipynb).
+   The same model can then be used for batch inference, real-time inference and asynchronous inference, as shown in the [notebook](sample_notebook.ipynb).
 
 ## Inference
 
